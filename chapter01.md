@@ -21,7 +21,7 @@
 
 - **SRP** *(Single Responsibility)*: 클래스에는 한 가지, 단 한 가지 변경 이유만 존재해야 한다. 
 - **OCP** *(The Open Closed Principle)*: 클래스는 확장에 열려 있어야 하며 변경에 닫혀 있어야 한다. 
-- **LSP** *(The Liskov Subsititution Principle)*: 상속받은 클래스는 기초 클래스를 대체할 수 있어야 한다. 
+- **LSP** *(The Liskov Substitution Principle)*: 상속받은 클래스는 기초 클래스를 대체할 수 있어야 한다. 
 - **DIP** *(The Dependency inversion Principle)*: 추상화에 의존해야 하며, 구체화에 의존하면 안 된다. 
 - **ISP** *(The Interface Segregation Principle)*: 클라이언트에 밀접하게 작게 쪼개진 인터페이스를 유지한다.
 
