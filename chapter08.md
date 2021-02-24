@@ -85,5 +85,79 @@ public class Sensors {
 
 
 
+### log4j 익히기
 
+- 밥 아저씨의 아파치의 log4j 연습 예시
+
+```java
+public class LogTest {
+  private Logger logger;
+  
+  @Before
+  public void initialize() {
+    logger = Logger.getLogger("logger");
+    logger.removeAllAppenders();
+    Logger.getRootLogger().removeAllAppenders();
+  }
+  
+  @Test
+  public void basicLogger() {
+    BasicConfigurator.configure();
+    logger.info("basicLogger");
+  }
+  
+  @Test
+  public void addAppenderWithStream() {
+    logger.addAppender(new ConsoleAppender(
+    new PatternLayout("%p %t %m%n"),
+    ConsoleAppender.SYSTEM_OUT));
+    logger.info("addAppenderWithStream");
+  }
+  
+  @Test
+  public void addAppenderWithoutStream() {
+    logger.addAppender(new ConsoleAppender(
+    new PatternLayout("%p %t %m%n")));
+    logger.info("addAppenderWithoutStream");
+  }
+}
+```
+
+- 콘솔 로거를 초기화하는 방법을 익힌 후 이 사용법들을 이용해 독자적인 로거 클래스로 캡슐화하면 나머지 프로그램은 log4j의 경계 인터페이스를 몰라도 된다. (현재의 slf4j는 위의 log4j에 비하면 훨씬 단순하게 사용하고 있는듯하다.)
+
+
+
+### 학습 테스트는 공짜 이상이다.
+
+- 학습 테스트에 드는 비용은 없다. (어쨌든 API를 배워야 하니까..? 오..)
+- 필요한 지식만 확보할 수 있는 손쉬운 방법이며, 이해도를 높여주는 정확한 실험이다.
+- 학습 테스트는 패키지가 예상대로 도는지 검증한다.
+- 패키지는 패키지 작성자에 의해 계속해서 변경이 일어날 수 있고, 새 버전이 나올 때마다 새로운 위험이 생긴다. (많이 위험해보인다.)
+- 새 버전이 우리 코드와 호환되지 않으면 **학습 테스트가** 이를 곧바로 밝혀낸다.
+- 학습 테스트를 이용한 학습이 필요하든 그렇지 않든, 실제 코드와 동일한 방식으로 인터페이스를 사용하는 테스트 케이스가 필요하다.
+- 경계 테스트가 있다면 패키지의 새 버전으로 이전하기 쉬울 것이고, 없다면 **낡은 버전을 필요 이상으로 오랫동안 사용하려는 유혹에** 빠지기 쉽다.
+
+
+
+### 아직 존재하지 않는 코드를 사용하기
+
+- 경계와 관련해 또 다른 유형은 아는 코드와 모르는 코드를 분리하는 경계다.
+- 우리가 바라는 인터페이스를 구현하면 우리가 인터페이스를 전적으로 통제한다는 장점이 생긴다.
+- 또한 코드 가독성도 높아지고 코드 의도도 분명해진다.
+- (교재에서는 아직 구현되지 않은 API를 사용하는 것처럼 하기 위한 장치로 사용했다.)
+  - Adapter 패턴으로 API 사용을 캡슐화해 API가 바뀔 때 수정할 코드를 한 곳으로 모았다. 
+
+
+
+### 깨끗한 경계
+
+- 경계에서는 변경이 대표적으로 많이 벌어진다.
+- 통제하지 못하는 코드를 사용할 때는 너무 많은 투자를 하거나 향후 변경 비용이 지나치게 커지지 않도록 각별히 주의해야 한다.
+- **경계에 위치하는 코드는 깔끔히 분리한다.**
+  - 또한 기대치를 정의하는 테스트 케이스도 작성한다.
+  - 이쪽 코드에서 외부 패키지를 세세하게 알아야 할 필요가 없다.
+  - 통제가 불가능한 외부 패키지에 의존하는 대신 통제가 가능한 우리 코드에 의존하는 편이 훨씬 좋다.
+  - 자칫하면 외부 코드에 휘둘린다.
+- 외부 패키지를 호출하는 코드를 가능한 줄여 경계를 관리하자.
+- Map에서 봤듯이 새로운 클래스로 경계를 감싸거나 Adapter 패턴을 사용해 우리가 원하는 인터페이스를 패키지가 제공하는 인터페이스로 변환하자. (번역이 잘못 된게 아닌가 싶은데, 하고 싶은 의도는 결국 외부 인터페이스에 휘둘리지 않고 우리가 원하는 인터페이스로 사용할 수 있도록 Adapter 패턴을 사용하자는 의미이다.)
 
