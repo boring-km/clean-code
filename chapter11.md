@@ -87,3 +87,134 @@
 - ~ DI 컨테이너는 필요한 객체의 인스턴스를 만든 후 생성자 인수나 설정자 메서드를 사용해 의존성을 설정한다.
 - 초기화 지연으로 얻는 장점을 무조건 포기할 필요는 없다. DI를 사용하더라도 때론 여전히 유용하다.
   - 대다수 DI 컨테이너는 필요할 때까지는 객체를 생성하지 않고, 대부분은 계산 지연이나 비슷한 최적화를 쓸 수 있도록 팩토리를 호출하거나 프록시를 생성하는 방법을 제공한다.
+  
+### 확장
+- '처음부터 올바르게' 시스템을 만들 수 있다는 믿음은 미신이다.
+- 소프트웨어 시스템은 '수명이 짧다'는 본질로 인해 아키텍처의 점진적인 발전이 가능하다.
+- EJB1과 EJB2 예시를 통해 관심사를 적절히 분리하지 못한 경우는 책에서 확인 (p.200 ~ 202)
+
+### 자바 프록시
+- 개별 객체나 클래스에서 메서드 호출을 wrapping 하는 경우
+- JDK에서는 기본으로 인터페이스만 지원하고, 클래스 프록시를 사용하려면 추가 라이브러리가 필요하다. (현재도 그런지 확인 필요!)
+
+```java
+// JDK 프록시 예제
+
+// Bank.java - 은행 추상화
+
+import java.util.*;
+
+public interface Bank {
+  Collection<Account> getAccounts();
+
+  void setAccounts(Collection<Account> accounts);
+}
+
+// BankImpl.java - 추상화를 위한 POJO 구현
+import java.util.*;
+
+public class BankImpl implements Bank {
+  private List<Account> accounts;
+
+  public Collection<Account> getAccounts() {
+    return accounts;
+  }
+
+  public void setAccounts(Collection<Account> accounts) {
+    this.accounts = new ArrayList<Account>();
+    this.accounts.addAll(accounts);
+  }
+}
+
+// BankProxyHandler.java - Proxy API가 필요로 하는 InvocationHandler
+import java.lang.reflect.*;
+        import java.util.*;
+
+public class BankProxyHandler implements InvocationHandler {
+  private Bank bank;
+
+  public BankProxyHandler(Bank bank) {
+    this.bank = bank;
+  }
+
+  // 자바 리플렉션 사용
+  public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    String methodName = method.getName();
+    if (methodName.equals("getAccounts")) {
+      bank.setAccounts((Collection<Account>) args[0]);
+      return bank.getAccounts();
+    } else if (methodName.equals("setAccounts")) {
+      bank.setAccounts((Collection<Account>) args[0]);
+      setAccountsToDatabase(bank.getAccounts());
+      return null;
+    } else {
+      // 교재에서도 생략된 부분
+    }
+  }
+
+  protected Collection<Account> getAccountsFromDatabase() { /* 구현 코드 */ }
+
+  protected void setAccountsToDatabase(Collection<Account> accounts) { /* 구현 코드 */ }
+}
+
+// BankService.java (교재에서는 이름 따로 없음)
+import java.lang.reflect.Proxy;
+
+public class BankService {
+
+  public void someMethod() {
+    Bank bank = (Bank) Proxy.newProxyInstance(
+            Bank.class.getClassLoader(),
+            new Class[]{Bank.class},
+            new BankProxyHandler(new BankImpl()));
+  }
+}
+```
+
+- 단점1: 코드의 양과 크기 -> 깨끗한 코드를 작성하기 어렵다
+- 단점2: 시스템 단위로 실행 지점을 명시하는 메커니즘을 제공하지 않는다. -> (AOP에서 해결)
+
+### 순수 자바 AOP 프레임워크
+- 내부적으로는 프록시를 사용한다.
+- 스프링은 비즈니스 로직을 POJO로 구현한다.
+- POJO는 순수하게 도메인에 초점을 맞추기 때문에 테스트가 개념적으로 더 쉽고 간단하여 보수하고 개선하기도 쉽다.
+- 결론적으로 스프링과 같은 프레임워크에서 사용자가 모르게 프록시나 바이트코드 라이브러리를 사용해 **영속성, 트랜잭션, 보안, 캐시, 장애조치**와 같은 횡단 관심사를 구현하고 있다.
+- 이는 프레임워크에서 코드를 작성한다고 하지만 사실상 많은 부분에서 이미 프레임워크와 독립적인 코드가 만들어지게 되었다.
+- XML이 조금 읽기 어렵지만 그런 설정 파일에 명시된 정책이 겉으로 잘 보이지 않지만 자동으로 생성되는 프록시나 관점 논리보다 단순하다는 평가에 따라 Spring과 EJB3에 기여한다.
+- 개선된 코드는 교재에서 확인 (p.208~p.209)
+
+### AspectJ 관점
+- 관심사를 관점으로 분리하는 가장 강력한 도구: AspectJ 언어
+- 새로 배워야하는 어려움이 있어서 AspectJ를 쉽게 사용하도록 도와주는 다양한 도구가 마련되어 있다.
+- (추가) 개발해보면서 spring aop 라이브러리만 추가해도 대부분 사용이 가능한 것 같다.
+
+### 테스트 주도 시스템 아키텍처 구축
+- 애플리케이션 도메인 논리를 POJO로 작성할 수 있다면 테스트 주도 아키텍처 구축이 가능해진다.
+- 아주 단순하면서도 멋지게 분리된 아키텍처로 프로젝트를 재빨리 진행한 다음, 기반 구조를 추가하면서 조금씩 확장해도 괜찮다.
+- 하지만! 설계가 아무리 멋진 API라도 정말 필요하지 않으면 **과유불급**
+
+### 의사 결정을 최적화하라
+- 모듈을 나누고 관심사를 분리하면 지엽적인 관리와 결정이 가능해진다.
+- **가능한 마지막 순간까지 결정을 미루는 방법**이 좋을 때도 있다.
+- 요약: 관심사를 모듈로 분리한 POJO 시스템은 기민함을 제공한다. 이런 기민함 덕택에 최신 정보에 기반해 최선의 시점에 최적의 결정을 내리기가 쉬워진다. 또한 결정의 복잡성도 줄어든다.
+
+### 명백한 가치가 있을 때 표준을 현명하게 사용하라
+- 표준을 사용하면 아이디어와 컴포넌트를 재사용하기 쉽다.
+- 적절한 경험을 가진 사람을 구하기 쉽다.
+- 컴포넌트를 엮기 쉽다.
+- **하지만** 때로는 표준을 만드는 시간이 너무 오래 걸려 업계가 기다리지 못하거나 표준을 제정한 본래 목적을 잊어버리기도 한다.
+
+### 시스템은 도메인 특화 언어가 필요하다
+- DSL: 간단한 스크립트 언어나 표준 언어로 구현한 API를 가리킨다.
+- 좋은 DSL은 도메인 개념과 그 개념을 구현한 코드 사이에 존재하는 '의사소통 간극'을 줄여준다.
+- 효과적으로 잘 사용한다면 추상화 수준을 코드 관용구나 디자인 패턴 이상으로 끌어올려서 개발자가 적절한 추상화 수준에서 코드 의도를 표현할 수 있다!
+
+### 결론
+- 시스템 역시 **깨끗해야** 한다.
+- 깨끗하지 못한 아키텍처는 도메인 논리를 흐리며 기민성을 떨어뜨린다.
+- 도메인 논리가 흐려지면 제품 품질이 떨어진다. 버그가 숨어들기 쉬워지고, 스토리를 구현하기 어려워진다.
+- 기민성이 떨어지면 생산성이 낮아져 TDD가 제공하는 장점이 사라진다.
+- 모든 추상화 단계에서 의도는 명확히 표현해야 한다.
+- **POJO를 작성하고 관점 or 관점과 유사한 메커니즘을 사용해 각 구현 관심사를 분리해야 한다.**
+- 시스템을 설계하든 개별 모듈을 설계하든, **실제로 돌아가는 가장 단순한 수단**을 사용해야 한다는 사실을 명심하자!
+
