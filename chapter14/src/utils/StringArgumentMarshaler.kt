@@ -6,19 +6,22 @@ import utils.ErrorCode.*
 class StringArgumentMarshaler: ArgumentMarshaler {
     private var stringValue = ""
 
+    @Throws(ArgsException::class)
     override fun set(currentArgument: Iterator<String>) {
         try {
             stringValue = currentArgument.next()
         } catch (e: NoSuchElementException) {
-            throw ArgsException(MISSING_STRING)
+            throw ArgsException(errorCode = MISSING_STRING)
         }
     }
 
-    fun getValue(am: ArgumentMarshaler?): String {
-        return if (am != null && am is StringArgumentMarshaler) {
-            am.stringValue
-        } else {
-            ""
+    companion object {
+        fun getValue(am: ArgumentMarshaler?): String {
+            return if (am != null && am is StringArgumentMarshaler) {
+                am.stringValue
+            } else {
+                ""
+            }
         }
     }
 }
