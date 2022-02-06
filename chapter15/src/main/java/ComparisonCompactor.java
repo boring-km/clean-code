@@ -5,9 +5,9 @@ public class ComparisonCompactor {
     private static final String DELTA_END = "]";
     private static final String DELTA_START = "[";
 
-    private int contextLength;
-    private String expected;
-    private String actual;
+    private final int contextLength;
+    private final String expected;
+    private final String actual;
     private int prefixLength;
     private int suffixLength;
 
@@ -64,15 +64,13 @@ public class ComparisonCompactor {
     }
 
     private String compact(String s) {
-        return new StringBuilder()
-                .append(startingEllipsis())
-                .append(startingContext())
-                .append(DELTA_START)
-                .append(delta(s))
-                .append(DELTA_END)
-                .append(endingContext())
-                .append(endingEllipsis())
-                .toString();
+        return startingEllipsis() +
+                startingContext() +
+                DELTA_START +
+                delta(s) +
+                DELTA_END +
+                endingContext() +
+                endingEllipsis();
     }
 
     private String startingEllipsis() {
